@@ -210,5 +210,15 @@ Lib/
 Scripts/
 dir
 
+# virtualenv / local python dirs
+venv/
+Include/
+Lib/
+Scripts/
+pyvenv.cfg
+
+# caches
+__pycache__/
+.pytest_cache/
 
 
