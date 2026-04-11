@@ -39,4 +39,4 @@ The project is currently in the implementation phase. The focus is on:
 Install dependencies:
 
 ```bash
-pip install -r requirements.tx
+pip install -r requirements.txt
