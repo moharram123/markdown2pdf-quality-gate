@@ -1,6 +1,7 @@
 # Structure Test
 
-This file intentionally removes the First Section heading.
+## First Section
+This section checks heading preservation.
 
 ## Second Section
 This section checks structural consistency.
