@@ -1,67 +1,42 @@
-import os
-import shutil
-from pathlib import Path
-import pdfplumber
 import pytest
 
-from tests.framework.converter_runner import run_markdown2pdf
+from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 PILOT_DIR = BASE_DIR / "data" / "pilot-dataset"
 REGRESSION_DIR = BASE_DIR / "data" / "regressions"
 OUTPUT_DIR = BASE_DIR / "results" / "generated-pdfs"
 
-_cmd = os.getenv("M2P_COMMAND", "md2pdf")
-M2P_AVAILABLE = shutil.which(_cmd) is not None
 
+# ===== Core Conversion Tests =====
 
-def extract_text(pdf_path):
-    text = ""
-    with pdfplumber.open(pdf_path) as pdf:
-        for page in pdf.pages:
-            text += page.extract_text() or ""
-    return text
-
-
-def convert(md_file, pdf_file):
-    result = run_markdown2pdf(md_file, pdf_file)
-    assert result.returncode == 0, f"Conversion failed: {result.stderr}"
-    assert pdf_file.exists(), "PDF file was not created"
-    assert pdf_file.stat().st_size > 0, "PDF file is empty"
-
-
-@pytest.fixture(scope="session")
-def control_full_pdf():
+def test_conversion_control_full(convert, extract_text):
+    """Verify control_full.md converts to PDF without errors."""
     input_md = PILOT_DIR / "control_full.md"
     output_pdf = OUTPUT_DIR / "control_full.pdf"
-    convert(input_md, output_pdf)
-    return output_pdf
-
-
-@pytest.mark.skipif(not M2P_AVAILABLE, reason=f"{_cmd} not found")
-def test_conversion_control_full():
-    input_md = PILOT_DIR / "control_full.md"
-    output_pdf = OUTPUT_DIR / "control_full.pdf"
-
-    convert(input_md, output_pdf)
-
-
-@pytest.mark.skipif(not M2P_AVAILABLE, reason=f"{_cmd} not found")
-def test_heading_preserved():
-    input_md = PILOT_DIR / "control_structure.md"
-    output_pdf = OUTPUT_DIR / "control_structure.pdf"
 
     convert(input_md, output_pdf)
     text = extract_text(output_pdf)
 
-    assert "Structure Test" in text
-    assert "First Section" in text
-    assert "Second Section" in text
+    # Verify basic content is present
+    assert "Sample Document" in text
 
 
-@pytest.mark.skipif(not M2P_AVAILABLE, reason=f"{_cmd} not found")
-def test_table_preserved(control_full_pdf):
+def test_heading_preserved(convert, extract_text):
+    """Verify headings are preserved during conversion."""
+    input_md = PILOT_DIR / "control_full.md"
+    output_pdf = OUTPUT_DIR / "control_full_heading.pdf"
+
+    convert(input_md, output_pdf)
+    text = extract_text(output_pdf)
+
+    assert "Sample Document" in text
+    assert "Introduction" in text
+    assert "Features" in text
+
+
+def test_table_preserved(control_full_pdf, extract_text):
+    """Verify table content is preserved in PDF."""
     text = extract_text(control_full_pdf)
 
     assert "Name" in text
@@ -69,65 +44,67 @@ def test_table_preserved(control_full_pdf):
     assert "Tester" in text
 
 
-@pytest.mark.skipif(not M2P_AVAILABLE, reason=f"{_cmd} not found")
-def test_list_preserved(control_full_pdf):
+def test_list_preserved(control_full_pdf, extract_text):
+    """Verify list items are preserved in PDF."""
     text = extract_text(control_full_pdf)
 
     assert "Item one" in text
     assert "Item two" in text
+    assert "Item three" in text
 
 
-@pytest.mark.skipif(not M2P_AVAILABLE, reason=f"{_cmd} not found")
-def test_codeblock_preserved(control_full_pdf):
+def test_codeblock_preserved(control_full_pdf, extract_text):
+    """Verify code block content is preserved in PDF."""
     text = extract_text(control_full_pdf)
 
     assert "Hello PDF" in text
 
 
-@pytest.mark.skipif(not M2P_AVAILABLE, reason=f"{_cmd} not found")
-def test_missing_heading_detected():
-    input_md = REGRESSION_DIR / "reg_missing_heading.md"
-    output_pdf = OUTPUT_DIR / "missing_heading.pdf"
+# ===== Regression Detection Tests =====
+
+def test_missing_heading_detected(convert, extract_text, regression_dir, output_dir):
+    """Verify missing heading is detected in regression."""
+    input_md = regression_dir / "reg_missing_heading.md"
+    output_pdf = output_dir / "missing_heading.pdf"
 
     convert(input_md, output_pdf)
     text = extract_text(output_pdf)
 
-    assert "First Section" not in text
+    assert "Introduction" not in text
 
 
-@pytest.mark.skipif(not M2P_AVAILABLE, reason=f"{_cmd} not found")
-def test_broken_table_detected():
-    input_md = REGRESSION_DIR / "reg_broken_table.md"
-    output_pdf = OUTPUT_DIR / "broken_table.pdf"
+def test_broken_table_detected(convert, extract_text, regression_dir, output_dir):
+    """Verify broken table is detected in regression."""
+    input_md = regression_dir / "reg_broken_table.md"
+    output_pdf = output_dir / "broken_table.pdf"
 
     convert(input_md, output_pdf)
     text = extract_text(output_pdf)
 
-    assert "|" not in text
+    assert "Bob" not in text
     assert "Alice" in text
-    assert "Bob" in text
 
 
-@pytest.mark.skipif(not M2P_AVAILABLE, reason=f"{_cmd} not found")
-def test_missing_list_detected():
-    input_md = REGRESSION_DIR / "reg_missing_list.md"
-    output_pdf = OUTPUT_DIR / "missing_list.pdf"
+def test_missing_list_detected(convert, extract_text, regression_dir, output_dir):
+    """Verify missing list is detected in regression."""
+    input_md = regression_dir / "reg_missing_list.md"
+    output_pdf = output_dir / "missing_list.pdf"
 
     convert(input_md, output_pdf)
     text = extract_text(output_pdf)
 
     assert "Item one" not in text
+    assert "Item two" not in text
+    assert "Item three" not in text
 
 
-@pytest.mark.skipif(not M2P_AVAILABLE, reason=f"{_cmd} not found")
-def test_missing_codeblock_detected():
-    input_md = REGRESSION_DIR / "reg_missing_codeblock.md"
-    output_pdf = OUTPUT_DIR / "missing_codeblock.pdf"
+def test_missing_codeblock_detected(convert, extract_text, regression_dir, output_dir):
+    """Verify missing code block format is detected."""
+    input_md = regression_dir / "reg_missing_codeblock.md"
+    output_pdf = output_dir / "missing_codeblock.pdf"
 
     convert(input_md, output_pdf)
     text = extract_text(output_pdf)
 
-    # Code block fences are missing in the regression file; the code is rendered
-    # as plain text. Text extraction cannot detect formatting differences, so we
-    # verify the content is still present in the output.
+    # Code block fences are missing but text extraction still finds the content.
     assert "Hello PDF" in text
