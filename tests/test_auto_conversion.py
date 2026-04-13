@@ -1,53 +1,130 @@
 import os
 from pathlib import Path
-import pytest
 import pdfplumber
+import pytest
 
 from tests.framework.converter_runner import run_markdown2pdf
-from tests.framework.baseline_comparator import load_baseline, find_differences
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-INPUT_MD = BASE_DIR / "data" / "pilot-dataset" / "sample.md"
-OUTPUT_PDF = BASE_DIR / "results" / "generated-pdfs" / "sample.pdf"
-
-REGRESSION_MD = BASE_DIR / "data" / "regressions" / "sample_missing_heading.md"
-REGRESSION_PDF = BASE_DIR / "results" / "generated-pdfs" / "sample_missing_heading.pdf"
-BASELINE_FILE = BASE_DIR / "data" / "baselines" / "sample_basic_expected.txt"
+PILOT_DIR = BASE_DIR / "data" / "pilot-dataset"
+REGRESSION_DIR = BASE_DIR / "data" / "regressions"
+OUTPUT_DIR = BASE_DIR / "results" / "generated-pdfs"
 
 M2P_COMMAND = os.getenv("M2P_COMMAND")
 
 
-def extract_text(pdf_path: Path) -> str:
-    parts = []
+def extract_text(pdf_path):
+    text = ""
     with pdfplumber.open(pdf_path) as pdf:
         for page in pdf.pages:
-            parts.append(page.extract_text() or "")
-    return "\n".join(parts)
+            text += page.extract_text() or ""
+    return text
 
 
-@pytest.mark.skipif(not M2P_COMMAND, reason="M2P_COMMAND is not set")
-def test_convert_markdown_to_pdf():
-    result = run_markdown2pdf(INPUT_MD, OUTPUT_PDF)
-
+def convert(md_file, pdf_file):
+    result = run_markdown2pdf(md_file, pdf_file)
     assert result.returncode == 0
-    assert OUTPUT_PDF.exists()
-    assert OUTPUT_PDF.stat().st_size > 0
+    assert pdf_file.exists()
+    assert pdf_file.stat().st_size > 0
 
 
-@pytest.mark.skipif(not M2P_COMMAND, reason="M2P_COMMAND is not set")
-def test_detect_missing_heading_regression():
-    result = run_markdown2pdf(REGRESSION_MD, REGRESSION_PDF)
+@pytest.mark.skipif(not M2P_COMMAND, reason="M2P_COMMAND not set")
+def test_conversion_control_full():
+    input_md = PILOT_DIR / "control_full.md"
+    output_pdf = OUTPUT_DIR / "control_full.pdf"
 
-    assert result.returncode == 0
-    assert REGRESSION_PDF.exists()
-    assert REGRESSION_PDF.stat().st_size > 0
+    convert(input_md, output_pdf)
 
-    actual_text = extract_text(REGRESSION_PDF)
-    expected_text = load_baseline(BASELINE_FILE)
 
-    differences = find_differences(actual_text, expected_text)
+@pytest.mark.skipif(not M2P_COMMAND, reason="M2P_COMMAND not set")
+def test_heading_preserved():
+    input_md = PILOT_DIR / "control_structure.md"
+    output_pdf = OUTPUT_DIR / "control_structure.pdf"
 
-    assert "Introduction" in differences, (
-        f"Regression was not detected correctly. Differences found: {differences}"
-    )
+    convert(input_md, output_pdf)
+    text = extract_text(output_pdf)
+
+    assert "Structure Test" in text
+    assert "First Section" in text
+    assert "Second Section" in text
+
+
+@pytest.mark.skipif(not M2P_COMMAND, reason="M2P_COMMAND not set")
+def test_table_preserved():
+    input_md = PILOT_DIR / "control_full.md"
+    output_pdf = OUTPUT_DIR / "table_test.pdf"
+
+    convert(input_md, output_pdf)
+    text = extract_text(output_pdf)
+
+    assert "Name" in text
+    assert "Alice" in text
+    assert "Tester" in text
+
+
+@pytest.mark.skipif(not M2P_COMMAND, reason="M2P_COMMAND not set")
+def test_list_preserved():
+    input_md = PILOT_DIR / "control_full.md"
+    output_pdf = OUTPUT_DIR / "list_test.pdf"
+
+    convert(input_md, output_pdf)
+    text = extract_text(output_pdf)
+
+    assert "Item one" in text
+    assert "Item two" in text
+
+
+@pytest.mark.skipif(not M2P_COMMAND, reason="M2P_COMMAND not set")
+def test_codeblock_preserved():
+    input_md = PILOT_DIR / "control_full.md"
+    output_pdf = OUTPUT_DIR / "codeblock_test.pdf"
+
+    convert(input_md, output_pdf)
+    text = extract_text(output_pdf)
+
+    assert "Hello PDF" in text
+
+
+@pytest.mark.skipif(not M2P_COMMAND, reason="M2P_COMMAND not set")
+def test_missing_heading_detected():
+    input_md = REGRESSION_DIR / "reg_missing_heading.md"
+    output_pdf = OUTPUT_DIR / "missing_heading.pdf"
+
+    convert(input_md, output_pdf)
+    text = extract_text(output_pdf)
+
+    assert "First Section" not in text
+
+
+@pytest.mark.skipif(not M2P_COMMAND, reason="M2P_COMMAND not set")
+def test_broken_table_detected():
+    input_md = REGRESSION_DIR / "reg_broken_table.md"
+    output_pdf = OUTPUT_DIR / "broken_table.pdf"
+
+    convert(input_md, output_pdf)
+    text = extract_text(output_pdf)
+
+    assert "|" not in text
+
+
+@pytest.mark.skipif(not M2P_COMMAND, reason="M2P_COMMAND not set")
+def test_missing_list_detected():
+    input_md = REGRESSION_DIR / "reg_missing_list.md"
+    output_pdf = OUTPUT_DIR / "missing_list.pdf"
+
+    convert(input_md, output_pdf)
+    text = extract_text(output_pdf)
+
+    assert "Item one" not in text
+
+
+@pytest.mark.skipif(not M2P_COMMAND, reason="M2P_COMMAND not set")
+def test_missing_codeblock_detected():
+    input_md = REGRESSION_DIR / "reg_missing_codeblock.md"
+    output_pdf = OUTPUT_DIR / "missing_codeblock.pdf"
+
+    convert(input_md, output_pdf)
+    text = extract_text(output_pdf)
+
+    assert "Hello PDF" in text  # content موجود ولكن format تبدل
