@@ -19,6 +19,7 @@ def run_markdown2pdf(input_file: Path, output_file: Path) -> subprocess.Complete
         capture_output=True,
         text=True,
         shell=False,
+        timeout=60,
     )
 
     if result.returncode == 0 and default_pdf.exists():

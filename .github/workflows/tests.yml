@@ -1,37 +1,51 @@
-name: tests
+name: Run Integration Tests
 
 on:
   push:
     branches: [ main ]
   pull_request:
+    branches: [ main ]
 
 jobs:
-  pytest:
+  test:
     runs-on: ubuntu-latest
 
+    env:
+      M2P_COMMAND: md2pdf
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Install .NET
+      - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
 
       - name: Install Markdown2Pdf.Console
-        run: dotnet tool install --global Markdown2Pdf.Console
+        run: dotnet tool install --global Markdown2Pdf.Console --version 2.0.2
 
       - name: Add .NET tools to PATH
         run: echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
 
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Create report directory
+        run: mkdir -p results/test-reports
+
       - name: Run tests
-        run: pytest -v
+        run: pytest -v -ra --html=results/test-reports/report.html --self-contained-html
+
+      - name: Upload test report
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: results/test-reports/report.html
