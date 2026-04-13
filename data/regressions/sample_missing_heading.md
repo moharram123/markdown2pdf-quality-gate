@@ -1,9 +1,20 @@
-# Structure Test
+# Sample Document
 
-This file intentionally removes the First Section heading.
+This is a basic test document for Markdown2Pdf.Console.
 
-## Second Section
-This section checks structural consistency.
+## Features
+- Item one
+- Item two
+- Item three
 
-### Subsection
-This subsection is included for hierarchy testing.
+## Table Section
+
+| Name  | Role   |
+|-------|--------|
+| Alice | Tester |
+| Bob   | DevOps |
+
+## Code Example
+
+```python
+print("Hello PDF")

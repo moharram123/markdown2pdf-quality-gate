@@ -1,18 +1,18 @@
 # Sample Document
 
-## Intro
+## Introduction
 This is a basic test document for Markdown2Pdf.Console.
 
-### Features
+## Features
 - Item one
 - Item two
 - Item three
 
 ## Table Section
 
-Name Role
-Alice Tester
-Bob DevOps
+| Name  | Role   |
+|-------|--------|
+| Alice | Tester |
 
 ## Code Example
 

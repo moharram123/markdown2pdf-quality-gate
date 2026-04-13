@@ -1,10 +1,9 @@
 # Sample Document
 
-## Intro
+## Introduction
 This is a basic test document for Markdown2Pdf.Console.
 
-### Features
-The original list was removed.
+## Features
 
 ## Table Section
 
