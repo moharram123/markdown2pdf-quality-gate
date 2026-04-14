@@ -99,12 +99,11 @@ def test_missing_list_detected(convert, extract_text, regression_dir, output_dir
 
 
 def test_missing_codeblock_detected(convert, extract_text, regression_dir, output_dir):
-    """Verify missing code block format is detected."""
     input_md = regression_dir / "reg_missing_codeblock.md"
     output_pdf = output_dir / "missing_codeblock.pdf"
 
     convert(input_md, output_pdf)
     text = extract_text(output_pdf)
 
-    # Code block fences are missing but text extraction still finds the content.
-    assert "Hello PDF" in text
+    assert "Code Example" in text
+    assert "Hello PDF" not in text
