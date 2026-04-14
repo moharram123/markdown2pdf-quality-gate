@@ -221,4 +221,11 @@ pyvenv.cfg
 __pycache__/
 .pytest_cache/
 
+# Generated PDFs (test artifacts)
+results/generated-pdfs/
+
+# Misc local folders that showed up untracked
+python/
+set/
+
 
