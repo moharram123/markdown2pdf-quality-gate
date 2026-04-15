@@ -1,109 +1,104 @@
 import pytest
-
 from pathlib import Path
 
+# import validation rules
+from tests.validation_rules.validation_rules import (
+    validate_heading,
+    validate_table,
+    validate_list,
+    validate_code_block,
+    detect_missing_heading,
+    detect_broken_table,
+    detect_missing_list,
+    detect_missing_code_block,
+)
+
+# paths
 BASE_DIR = Path(__file__).resolve().parent.parent
 PILOT_DIR = BASE_DIR / "data" / "pilot-dataset"
 REGRESSION_DIR = BASE_DIR / "data" / "regressions"
 OUTPUT_DIR = BASE_DIR / "results" / "generated-pdfs"
 
+# Normal Validation Tests
 
-# ===== Core Conversion Tests =====
 
-def test_conversion_control_full(convert, extract_text):
-    """Verify control_full.md converts to PDF without errors."""
+def test_heading_validation(convert, extract_text):
     input_md = PILOT_DIR / "control_full.md"
-    output_pdf = OUTPUT_DIR / "control_full.pdf"
+    output_pdf = OUTPUT_DIR / "heading_test.pdf"
 
     convert(input_md, output_pdf)
     text = extract_text(output_pdf)
 
-    # Verify basic content is present
-    assert "Sample Document" in text
+    assert validate_heading(text)
 
 
-def test_heading_preserved(convert, extract_text):
-    """Verify headings are preserved during conversion."""
+def test_table_validation(convert, extract_text):
     input_md = PILOT_DIR / "control_full.md"
-    output_pdf = OUTPUT_DIR / "control_full_heading.pdf"
+    output_pdf = OUTPUT_DIR / "table_test.pdf"
 
     convert(input_md, output_pdf)
     text = extract_text(output_pdf)
 
-    assert "Sample Document" in text
-    assert "Introduction" in text
-    assert "Features" in text
+    assert validate_table(text)
 
 
-def test_table_preserved(control_full_pdf, extract_text):
-    """Verify table content is preserved in PDF."""
-    text = extract_text(control_full_pdf)
-
-    assert "Name" in text
-    assert "Alice" in text
-    assert "Tester" in text
-
-
-def test_list_preserved(control_full_pdf, extract_text):
-    """Verify list items are preserved in PDF."""
-    text = extract_text(control_full_pdf)
-
-    assert "Item one" in text
-    assert "Item two" in text
-    assert "Item three" in text
-
-
-def test_codeblock_preserved(control_full_pdf, extract_text):
-    """Verify code block content is preserved in PDF."""
-    text = extract_text(control_full_pdf)
-
-    assert "Hello PDF" in text
-
-
-# ===== Regression Detection Tests =====
-
-def test_missing_heading_detected(convert, extract_text, regression_dir, output_dir):
-    """Verify missing heading is detected in regression."""
-    input_md = regression_dir / "reg_missing_heading.md"
-    output_pdf = output_dir / "missing_heading.pdf"
+def test_list_validation(convert, extract_text):
+    input_md = PILOT_DIR / "control_full.md"
+    output_pdf = OUTPUT_DIR / "list_test.pdf"
 
     convert(input_md, output_pdf)
     text = extract_text(output_pdf)
 
-    assert "Introduction" not in text
+    assert validate_list(text)
 
 
-def test_broken_table_detected(convert, extract_text, regression_dir, output_dir):
-    """Verify broken table is detected in regression."""
-    input_md = regression_dir / "reg_broken_table.md"
-    output_pdf = output_dir / "broken_table.pdf"
-
-    convert(input_md, output_pdf)
-    text = extract_text(output_pdf)
-
-    assert "Bob" not in text
-    assert "Alice" in text
-
-
-def test_missing_list_detected(convert, extract_text, regression_dir, output_dir):
-    """Verify missing list is detected in regression."""
-    input_md = regression_dir / "reg_missing_list.md"
-    output_pdf = output_dir / "missing_list.pdf"
+def test_codeblock_validation(convert, extract_text):
+    input_md = PILOT_DIR / "control_full.md"
+    output_pdf = OUTPUT_DIR / "code_test.pdf"
 
     convert(input_md, output_pdf)
     text = extract_text(output_pdf)
 
-    assert "Item one" not in text
-    assert "Item two" not in text
-    assert "Item three" not in text
+    assert validate_code_block(text)
 
 
-def test_missing_codeblock_detected(convert, extract_text, regression_dir, output_dir):
-    input_md = regression_dir / "reg_missing_codeblock.md"
-    output_pdf = output_dir / "missing_codeblock.pdf"
+# Regression Tests
+
+def test_missing_heading_regression(convert, extract_text):
+    input_md = REGRESSION_DIR / "reg_missing_heading.md"
+    output_pdf = OUTPUT_DIR / "missing_heading.pdf"
 
     convert(input_md, output_pdf)
     text = extract_text(output_pdf)
 
-    assert "Code Example" in text
-    assert "Hello PDF" not in text
+    assert detect_missing_heading(text)
+
+
+def test_broken_table_regression(convert, extract_text):
+    input_md = REGRESSION_DIR / "reg_broken_table.md"
+    output_pdf = OUTPUT_DIR / "broken_table.pdf"
+
+    convert(input_md, output_pdf)
+    text = extract_text(output_pdf)
+
+    assert detect_broken_table(text)
+
+
+def test_missing_list_regression(convert, extract_text):
+    input_md = REGRESSION_DIR / "reg_missing_list.md"
+    output_pdf = OUTPUT_DIR / "missing_list.pdf"
+
+    convert(input_md, output_pdf)
+    text = extract_text(output_pdf)
+
+    assert detect_missing_list(text)
+
+
+def test_missing_codeblock_regression(convert, extract_text):
+    input_md = REGRESSION_DIR / "reg_missing_codeblock.md"
+    output_pdf = OUTPUT_DIR / "missing_codeblock.pdf"
+
+    convert(input_md, output_pdf)
+    text = extract_text(output_pdf)
+
+    assert detect_missing_code_block(text)
